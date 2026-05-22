@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import {
@@ -51,7 +52,7 @@ export default function Dashboard() {
     },
   ];
 
-  // Dummy chart data (top products)
+  // Dummy top products
   const topProducts = [
     { name: "Chocolate Cake", sold: 45 },
     { name: "Croissant", sold: 32 },
@@ -63,7 +64,7 @@ export default function Dashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {stats.map((s, i) => (
           <div
@@ -113,7 +114,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Simple bar chart (top products) */}
+      {/* Top Products Chart */}
       <div className="bg-white p-6 rounded-xl shadow-sm">
         <h2 className="text-lg font-semibold mb-4">Top Selling Products</h2>
         <div className="space-y-3">

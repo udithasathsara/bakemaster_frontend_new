@@ -1,7 +1,8 @@
+// src/pages/Orders.jsx
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
-import { FiPlus, FiX } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiX } from "react-icons/fi";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -47,20 +48,29 @@ export default function Orders() {
     try {
       await api.post("/orders", form);
       toast.success("Order created");
-      // ...
+      setModalOpen(false);
+      setForm({
+        customerId: "",
+        channel: "WALK_IN",
+        deliveryDeadline: "",
+        items: [{ productName: "", quantity: 1, unitPrice: 0 }],
+      });
+      fetchOrders();
     } catch (err) {
-      // Show backend validation messages
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.errors?.join(", ") ||
-        "Error creating order";
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Error");
     }
   };
 
   const updateStatus = async (id, newStatus) => {
     await api.put(`/orders/${id}/status`, { status: newStatus });
     toast.success(`Order #${id} updated`);
+    fetchOrders();
+  };
+
+  const deleteOrder = async (id) => {
+    if (!window.confirm("Delete order?")) return;
+    await api.delete(`/orders/${id}`);
+    toast.success("Order deleted");
     fetchOrders();
   };
 
@@ -191,9 +201,10 @@ export default function Orders() {
             <tr>
               <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Customer</th>
+              <th className="p-3 text-left">Items</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 text-left">Channel</th>
-              <th className="p-3 text-left">Change Status</th>
+              <th className="p-3 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -201,6 +212,13 @@ export default function Orders() {
               <tr key={o.id} className="border-b hover:bg-gray-50">
                 <td className="p-3">{o.id}</td>
                 <td className="p-3">{getCustomerName(o.customerId)}</td>
+                <td className="p-3 text-sm">
+                  {o.items.map((i) => (
+                    <div key={i.id}>
+                      {i.productName} x{i.quantity}
+                    </div>
+                  ))}
+                </td>
                 <td className="p-3">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -221,13 +239,19 @@ export default function Orders() {
                   <select
                     value={o.status}
                     onChange={(e) => updateStatus(o.id, e.target.value)}
-                    className="border p-1 rounded text-sm"
+                    className="border p-1 rounded text-sm mr-2"
                   >
                     <option>PENDING</option>
                     <option>IN_PROGRESS</option>
                     <option>BAKING</option>
                     <option>DELIVERED</option>
                   </select>
+                  <button
+                    onClick={() => deleteOrder(o.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <FiTrash2 />
+                  </button>
                 </td>
               </tr>
             ))}

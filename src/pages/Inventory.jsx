@@ -1,3 +1,4 @@
+// src/pages/Inventory.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
@@ -7,6 +8,7 @@ import { FiPlus, FiTrash2, FiEdit3, FiShoppingCart, FiX } from "react-icons/fi";
 export default function Inventory() {
   const [ingredients, setIngredients] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null); // for update
   const [form, setForm] = useState({
     name: "",
     quantity: 0,
@@ -23,19 +25,50 @@ export default function Inventory() {
     fetchData();
   }, []);
 
-  const handleAdd = async (e) => {
+  const openAddModal = () => {
+    setEditingId(null);
+    setForm({
+      name: "",
+      quantity: 0,
+      unit: "",
+      expiryDate: "",
+      reorderThreshold: 0,
+    });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (ing) => {
+    setEditingId(ing.id);
+    setForm({
+      name: ing.name,
+      quantity: ing.quantity,
+      unit: ing.unit,
+      expiryDate: ing.expiryDate,
+      reorderThreshold: ing.reorderThreshold,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/inventory", form);
-      toast.success("Ingredient added");
+      if (editingId) {
+        // update just quantity? The backend updateStock only changes qty. We'll use that.
+        await api.put(`/inventory/${editingId}/stock?qty=${form.quantity}`);
+        toast.success("Ingredient updated");
+      } else {
+        await api.post("/inventory", form);
+        toast.success("Ingredient added");
+      }
       setModalOpen(false);
       fetchData();
     } catch (err) {
-      toast.error("Error");
+      const msg = err.response?.data?.message || "Error";
+      toast.error(msg);
     }
   };
 
-  const updateStock = async (id, qty) => {
+  const updateStockQuick = async (id, qty) => {
     if (!qty) return;
     await api.put(`/inventory/${id}/stock?qty=${qty}`);
     toast.success("Stock updated");
@@ -43,7 +76,7 @@ export default function Inventory() {
   };
 
   const deleteIngredient = async (id) => {
-    if (!window.confirm("Delete?")) return;
+    if (!window.confirm("Delete this ingredient?")) return;
     await api.delete(`/inventory/${id}`);
     toast.success("Deleted");
     fetchData();
@@ -72,7 +105,7 @@ export default function Inventory() {
             </button>
           )}
           <button
-            onClick={() => setModalOpen(true)}
+            onClick={openAddModal}
             className="flex items-center gap-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
           >
             <FiPlus /> Add Ingredient
@@ -90,8 +123,10 @@ export default function Inventory() {
             >
               <FiX size={20} />
             </button>
-            <h2 className="text-xl font-bold mb-4">New Ingredient</h2>
-            <form onSubmit={handleAdd} className="space-y-3">
+            <h2 className="text-xl font-bold mb-4">
+              {editingId ? "Edit Ingredient" : "New Ingredient"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-3">
               <input
                 type="text"
                 placeholder="Name"
@@ -112,7 +147,7 @@ export default function Inventory() {
               />
               <input
                 type="text"
-                placeholder="Unit (kg, litre)"
+                placeholder="Unit"
                 className="w-full border p-2 rounded"
                 value={form.unit}
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
@@ -141,7 +176,7 @@ export default function Inventory() {
                 type="submit"
                 className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
               >
-                Save
+                {editingId ? "Update" : "Save"}
               </button>
             </form>
           </div>
@@ -156,58 +191,84 @@ export default function Inventory() {
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Stock</th>
               <th className="p-3 text-left">Expiry</th>
+              <th className="p-3 text-left">Status</th>
               <th className="p-3 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {ingredients.map((ing) => (
-              <tr key={ing.id} className="border-b hover:bg-gray-50">
-                <td className="p-3 font-medium">{ing.name}</td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <span>
-                      {ing.quantity} {ing.unit}
-                    </span>
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full max-w-[100px]">
-                      <div
-                        className={`h-2 rounded-full ${ing.quantity < ing.reorderThreshold ? "bg-red-500" : "bg-green-500"}`}
-                        style={{
-                          width: `${Math.min(100, (ing.quantity / (ing.reorderThreshold * 2)) * 100)}%`,
-                        }}
-                      ></div>
+            {ingredients.map((ing) => {
+              const lowStock = ing.quantity <= ing.reorderThreshold;
+              return (
+                <tr key={ing.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 font-medium">{ing.name}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {ing.quantity} {ing.unit}
+                      </span>
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full max-w-[100px]">
+                        <div
+                          className={`h-2 rounded-full ${lowStock ? "bg-red-500" : "bg-green-500"}`}
+                          style={{
+                            width: `${Math.min(100, (ing.quantity / (ing.reorderThreshold * 2)) * 100)}%`,
+                          }}
+                        ></div>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="p-3 text-sm">{ing.expiryDate}</td>
-                <td className="p-3 flex gap-2">
-                  <input
-                    type="number"
-                    className="w-16 border p-1 text-sm"
-                    placeholder="Qty"
-                    id={`qty-${ing.id}`}
-                  />
-                  <button
-                    onClick={() =>
-                      updateStock(
-                        ing.id,
-                        document.getElementById(`qty-${ing.id}`).value,
-                      )
-                    }
-                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                  >
-                    <FiEdit3 />
-                  </button>
-                  {isAdmin && (
-                    <button
-                      onClick={() => deleteIngredient(ing.id)}
-                      className="p-1 text-red-600 hover:bg-red-100 rounded"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="p-3 text-sm">{ing.expiryDate}</td>
+                  <td className="p-3">
+                    {lowStock ? (
+                      <span className="text-red-600 text-xs font-semibold">
+                        ⚠ Low
+                      </span>
+                    ) : (
+                      <span className="text-green-600 text-xs">OK</span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="number"
+                        className="w-16 border p-1 text-sm"
+                        placeholder="Qty"
+                        id={`qty-${ing.id}`}
+                      />
+                      <button
+                        onClick={() =>
+                          updateStockQuick(
+                            ing.id,
+                            document.getElementById(`qty-${ing.id}`).value,
+                          )
+                        }
+                        className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                        title="Quick update stock"
+                      >
+                        <FiEdit3 />
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => openEditModal(ing)}
+                            className="p-1 text-yellow-600 hover:bg-yellow-100 rounded"
+                            title="Edit"
+                          >
+                            <FiEdit3 />
+                          </button>
+                          <button
+                            onClick={() => deleteIngredient(ing.id)}
+                            className="p-1 text-red-600 hover:bg-red-100 rounded"
+                            title="Delete"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

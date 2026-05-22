@@ -1,10 +1,11 @@
+// src/pages/Customers.jsx
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
-  const [expanded, setExpanded] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
@@ -12,11 +13,11 @@ export default function Customers() {
   }, []);
 
   const toggleExpand = async (customer) => {
-    if (expanded === customer.id) {
-      setExpanded(null);
+    if (expandedId === customer.id) {
+      setExpandedId(null);
       return;
     }
-    setExpanded(customer.id);
+    setExpandedId(customer.id);
     const res = await api.get(`/customers/${customer.id}/orders`);
     setOrders(res.data);
   };
@@ -50,11 +51,11 @@ export default function Customers() {
                   <td className="p-3">{c.email}</td>
                   <td className="p-3">⭐ {c.loyaltyPoints}</td>
                   <td className="p-3">
-                    {expanded === c.id ? <FiChevronUp /> : <FiChevronDown />}
+                    {expandedId === c.id ? <FiChevronUp /> : <FiChevronDown />}
                   </td>
                 </tr>
-                {expanded === c.id && (
-                  <tr key={`expanded-${c.id}`}>
+                {expandedId === c.id && (
+                  <tr key={`exp-${c.id}`}>
                     <td colSpan={6} className="p-4 bg-gray-50">
                       <h4 className="font-semibold mb-2">Order History</h4>
                       {orders.length ? (
