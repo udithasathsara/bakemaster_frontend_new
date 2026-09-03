@@ -1,7 +1,8 @@
+// src/pages/ProductionBoard.jsx
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import toast from "react-hot-toast";
 import { FiChevronRight } from "react-icons/fi";
+import { showSuccess, showError } from "../services/swal";
 
 const stages = [
   {
@@ -45,9 +46,13 @@ export default function ProductionBoard() {
         : order.status === "IN_PROGRESS"
           ? "BAKING"
           : "DELIVERED";
-    await api.put(`/orders/${order.id}/status`, { status: next });
-    toast.success(`Order #${order.id} → ${next}`);
-    fetchQueue();
+    try {
+      await api.put(`/orders/${order.id}/status`, { status: next });
+      showSuccess(`Order #${order.id} → ${next}`);
+      fetchQueue();
+    } catch (err) {
+      showError(err.response?.data?.message || "Update failed");
+    }
   };
 
   return (

@@ -1,8 +1,8 @@
 // src/pages/Orders.jsx
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import toast from "react-hot-toast";
 import { FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import { showSuccess, showError, showConfirm } from "../services/swal";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -47,7 +47,7 @@ export default function Orders() {
     e.preventDefault();
     try {
       await api.post("/orders", form);
-      toast.success("Order created");
+      showSuccess("Order created");
       setModalOpen(false);
       setForm({
         customerId: "",
@@ -57,21 +57,23 @@ export default function Orders() {
       });
       fetchOrders();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Error");
+      showError(err.response?.data?.message || "Error");
     }
   };
 
   const updateStatus = async (id, newStatus) => {
     await api.put(`/orders/${id}/status`, { status: newStatus });
-    toast.success(`Order #${id} updated`);
+    showSuccess(`Order #${id} updated to ${newStatus}`);
     fetchOrders();
   };
 
   const deleteOrder = async (id) => {
-    if (!window.confirm("Delete order?")) return;
-    await api.delete(`/orders/${id}`);
-    toast.success("Order deleted");
-    fetchOrders();
+    const result = await showConfirm("Delete this order?");
+    if (result.isConfirmed) {
+      await api.delete(`/orders/${id}`);
+      showSuccess("Order deleted");
+      fetchOrders();
+    }
   };
 
   const getCustomerName = (id) =>

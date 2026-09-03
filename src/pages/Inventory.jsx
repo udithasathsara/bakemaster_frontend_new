@@ -2,13 +2,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
-import toast from "react-hot-toast";
 import { FiPlus, FiTrash2, FiEdit3, FiShoppingCart, FiX } from "react-icons/fi";
+import { showSuccess, showError, showConfirm } from "../services/swal";
 
 export default function Inventory() {
   const [ingredients, setIngredients] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null); // for update
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     name: "",
     quantity: 0,
@@ -25,7 +25,7 @@ export default function Inventory() {
     fetchData();
   }, []);
 
-  const openAddModal = () => {
+  const openAdd = () => {
     setEditingId(null);
     setForm({
       name: "",
@@ -37,7 +37,7 @@ export default function Inventory() {
     setModalOpen(true);
   };
 
-  const openEditModal = (ing) => {
+  const openEdit = (ing) => {
     setEditingId(ing.id);
     setForm({
       name: ing.name,
@@ -53,41 +53,41 @@ export default function Inventory() {
     e.preventDefault();
     try {
       if (editingId) {
-        // update just quantity? The backend updateStock only changes qty. We'll use that.
         await api.put(`/inventory/${editingId}/stock?qty=${form.quantity}`);
-        toast.success("Ingredient updated");
+        showSuccess("Ingredient updated");
       } else {
         await api.post("/inventory", form);
-        toast.success("Ingredient added");
+        showSuccess("Ingredient added");
       }
       setModalOpen(false);
       fetchData();
     } catch (err) {
-      const msg = err.response?.data?.message || "Error";
-      toast.error(msg);
+      showError(err.response?.data?.message || "Error");
     }
   };
 
   const updateStockQuick = async (id, qty) => {
     if (!qty) return;
     await api.put(`/inventory/${id}/stock?qty=${qty}`);
-    toast.success("Stock updated");
+    showSuccess("Stock updated");
     fetchData();
   };
 
   const deleteIngredient = async (id) => {
-    if (!window.confirm("Delete this ingredient?")) return;
-    await api.delete(`/inventory/${id}`);
-    toast.success("Deleted");
-    fetchData();
+    const result = await showConfirm("Delete this ingredient?");
+    if (result.isConfirmed) {
+      await api.delete(`/inventory/${id}`);
+      showSuccess("Deleted");
+      fetchData();
+    }
   };
 
   const generatePO = async () => {
     try {
       const res = await api.post("/inventory/generate-po");
-      toast.success(`PO #${res.data.id} generated`);
+      showSuccess(`PO #${res.data.id} generated`);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Error");
+      showError(err.response?.data?.message || "Error");
     }
   };
 
@@ -105,7 +105,7 @@ export default function Inventory() {
             </button>
           )}
           <button
-            onClick={openAddModal}
+            onClick={openAdd}
             className="flex items-center gap-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
           >
             <FiPlus /> Add Ingredient
@@ -249,7 +249,7 @@ export default function Inventory() {
                       {isAdmin && (
                         <>
                           <button
-                            onClick={() => openEditModal(ing)}
+                            onClick={() => openEdit(ing)}
                             className="p-1 text-yellow-600 hover:bg-yellow-100 rounded"
                             title="Edit"
                           >
