@@ -35,6 +35,7 @@ export default function ProductionPlanning() {
   const [form, setForm] = useState({
     orderId: "",
     taskType: "BAKING",
+    quantity: 1,
     assignedStaffId: "",
     scheduledStart: "",
     scheduledEnd: "",
@@ -75,6 +76,7 @@ export default function ProductionPlanning() {
     setForm({
       orderId: orders.length > 0 ? orders[0].id : "",
       taskType: "BAKING",
+      quantity: 1,
       assignedStaffId: "",
       scheduledStart: startTime,
       scheduledEnd: endTime,
@@ -135,12 +137,13 @@ export default function ProductionPlanning() {
       const payload = {
         orderId: Number(form.orderId),
         taskType: form.taskType,
+        quantity: form.quantity ? Number(form.quantity) : 1,
         assignedStaffId: form.assignedStaffId ? Number(form.assignedStaffId) : null,
         scheduledStart:
           form.scheduledStart.length === 16 ? form.scheduledStart + ":00" : form.scheduledStart,
         scheduledEnd:
           form.scheduledEnd.length === 16 ? form.scheduledEnd + ":00" : form.scheduledEnd,
-        priority: Number(form.priority),
+        priority: form.priority ? Number(form.priority) : 2,
         notes: form.notes,
       };
 
@@ -589,9 +592,9 @@ export default function ProductionPlanning() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Workstation Station *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Workstation *</label>
                   <select
                     className="w-full border px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     value={form.taskType}
@@ -606,15 +609,26 @@ export default function ProductionPlanning() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Batch Quantity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full border px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    value={form.quantity}
+                    onChange={(e) => setForm({ ...form, quantity: Math.max(1, Number(e.target.value)) })}
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Priority</label>
                   <select
                     className="w-full border px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     value={form.priority}
                     onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })}
                   >
-                    <option value={1}>High Priority (Rush)</option>
-                    <option value={2}>Medium Priority (Standard)</option>
-                    <option value={3}>Low Priority</option>
+                    <option value={1}>High (Rush)</option>
+                    <option value={2}>Medium (Standard)</option>
+                    <option value={3}>Low</option>
                   </select>
                 </div>
               </div>

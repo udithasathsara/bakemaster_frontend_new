@@ -52,18 +52,31 @@ export default function Inventory() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const { isManager, isAdmin } = useAuth();
   const canEdit = isManager;
 
-  const fetchIngredients = async () => {
-    setLoading(true);
+  const fetchIngredients = async (isManual = false) => {
+    if (isManual) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const res = await api.get("/inventory");
       setIngredients(res.data);
+      if (isManual) {
+        setSearch("");
+        setFilterType("ALL");
+        setCurrentPage(1);
+        showSuccess("Inventory stock & alerts refreshed!");
+      }
     } catch (err) {
       showError(err.response?.data?.message || "Failed to load inventory");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -243,10 +256,13 @@ export default function Inventory() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={fetchIngredients}
-            className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 shadow-xs"
+            onClick={() => fetchIngredients(true)}
+            disabled={refreshing}
+            className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 shadow-xs active:scale-95 transition disabled:opacity-50"
+            title="Refresh inventory from server"
           >
-            <FiRefreshCw className={loading ? "animate-spin" : ""} /> Refresh
+            <FiRefreshCw className={refreshing ? "animate-spin text-indigo-600" : ""} />
+            {refreshing ? "Refreshing..." : "Refresh"}
           </button>
           {canEdit && (
             <button
