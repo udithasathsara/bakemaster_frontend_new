@@ -5,20 +5,24 @@ import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
 import Inventory from "./pages/Inventory";
 import Orders from "./pages/Orders";
 import ProductionBoard from "./pages/ProductionBoard";
+import ProductionPlanning from "./pages/ProductionPlanning";
 import Customers from "./pages/Customers";
 import Suppliers from "./pages/Suppliers";
 import PurchaseOrders from "./pages/PurchaseOrders";
+import StaffManagement from "./pages/StaffManagement";
+import UserManagement from "./pages/UserManagement";
+import Reports from "./pages/Reports";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 function Layout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
-  // If not logged in, redirect to /login immediately
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (loading) return <LoadingSpinner />;
+  if (!user) return <Navigate to="/login" replace />;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -38,6 +42,14 @@ function Layout() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/products"
+            element={
+              <ProtectedRoute>
+                <Products />
               </ProtectedRoute>
             }
           />
@@ -66,6 +78,14 @@ function Layout() {
             }
           />
           <Route
+            path="/production-planning"
+            element={
+              <ProtectedRoute>
+                <ProductionPlanning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/customers"
             element={
               <ProtectedRoute>
@@ -89,6 +109,30 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute>
+                <StaffManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <Reports />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </div>
@@ -102,7 +146,6 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Layout handles authenticated routes */}
           <Route path="/*" element={<Layout />} />
         </Routes>
       </BrowserRouter>
