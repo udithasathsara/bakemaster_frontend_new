@@ -10,6 +10,7 @@ import {
   FiLogOut,
   FiMenu,
   FiX,
+  FiClipboard,
 } from "react-icons/fi";
 import { useState } from "react";
 
@@ -20,6 +21,7 @@ const links = [
   { to: "/production", icon: FiTrello, label: "Production" },
   { to: "/customers", icon: FiUsers, label: "Customers" },
   { to: "/suppliers", icon: FiTruck, label: "Suppliers" },
+  { to: "/purchase-orders", icon: FiClipboard, label: "Purchase Orders" },
 ];
 
 export default function Sidebar() {

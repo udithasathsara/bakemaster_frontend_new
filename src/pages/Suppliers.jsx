@@ -1,8 +1,8 @@
 // src/pages/Suppliers.jsx
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import toast from "react-hot-toast";
 import { FiPlus, FiTrash2, FiEdit3, FiX } from "react-icons/fi";
+import { showSuccess, showError, showConfirm } from "../services/swal";
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
@@ -42,23 +42,25 @@ export default function Suppliers() {
     try {
       if (editingId) {
         await api.put(`/suppliers/${editingId}`, form);
-        toast.success("Supplier updated");
+        showSuccess("Supplier updated");
       } else {
         await api.post("/suppliers", form);
-        toast.success("Supplier added");
+        showSuccess("Supplier added");
       }
       setModalOpen(false);
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Error");
+      showError(err.response?.data?.message || "Error");
     }
   };
 
   const deleteSupplier = async (id) => {
-    if (!window.confirm("Delete supplier?")) return;
-    await api.delete(`/suppliers/${id}`);
-    toast.success("Deleted");
-    fetchData();
+    const result = await showConfirm("Delete this supplier?");
+    if (result.isConfirmed) {
+      await api.delete(`/suppliers/${id}`);
+      showSuccess("Deleted");
+      fetchData();
+    }
   };
 
   return (

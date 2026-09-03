@@ -10,7 +10,7 @@ import Orders from "./pages/Orders";
 import ProductionBoard from "./pages/ProductionBoard";
 import Customers from "./pages/Customers";
 import Suppliers from "./pages/Suppliers";
-import { Toaster } from "react-hot-toast";
+import PurchaseOrders from "./pages/PurchaseOrders";
 
 function Layout() {
   const { user } = useAuth();
@@ -81,6 +81,14 @@ function Layout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/purchase-orders"
+            element={
+              <ProtectedRoute>
+                <PurchaseOrders />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </div>
@@ -91,7 +99,6 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

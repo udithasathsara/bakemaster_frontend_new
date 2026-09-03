@@ -1,22 +1,29 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import api from "../services/api";
 import {
   FiAlertTriangle,
   FiClock,
   FiShoppingCart,
   FiLoader,
+  FiRefreshCw,
 } from "react-icons/fi";
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     api
       .get("/dashboard")
       .then((res) => setData(res.data))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // refresh every 30s
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   if (!data)
     return (
@@ -52,7 +59,6 @@ export default function Dashboard() {
     },
   ];
 
-  // Dummy top products
   const topProducts = [
     { name: "Chocolate Cake", sold: 45 },
     { name: "Croissant", sold: 32 },
@@ -62,9 +68,17 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-1 bg-white border px-3 py-1 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+        >
+          <FiRefreshCw /> Refresh
+        </button>
+      </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {stats.map((s, i) => (
           <div
@@ -114,7 +128,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Top Products Chart */}
+      {/* Top Products */}
       <div className="bg-white p-6 rounded-xl shadow-sm">
         <h2 className="text-lg font-semibold mb-4">Top Selling Products</h2>
         <div className="space-y-3">
