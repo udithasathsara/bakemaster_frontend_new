@@ -167,21 +167,28 @@ export default function Products() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const sellingPriceNum = Number(form.sellingPrice);
+    if (isNaN(sellingPriceNum) || sellingPriceNum <= 0) {
+      showError("Please enter a valid selling price greater than 0");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload = {
-        name: form.name,
+        name: form.name.trim(),
         category: form.category,
-        sellingPrice: Number(form.sellingPrice),
-        costPrice: Number(form.costPrice),
-        shelfLifeDays: Number(form.shelfLifeDays),
-        description: form.description,
-        imageUrl: form.imageUrl,
-        active: form.active,
-        recipeItems: form.recipeItems.map((item) => ({
+        sellingPrice: sellingPriceNum,
+        costPrice: Number(form.costPrice) || 0.0,
+        shelfLifeDays: Number(form.shelfLifeDays) || 3,
+        description: form.description ? form.description.trim() : "",
+        imageUrl: form.imageUrl ? form.imageUrl.trim() : "",
+        active: form.active !== undefined ? form.active : true,
+        recipeItems: (form.recipeItems || []).map((item) => ({
           ingredientId: Number(item.ingredientId),
-          quantityRequired: Number(item.quantityRequired),
-          unit: item.unit,
+          quantityRequired: Number(item.quantityRequired) || 0.0,
+          unit: item.unit || "kg",
         })),
       };
 
@@ -314,12 +321,21 @@ export default function Products() {
                       alt={prod.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.style.display = "none";
+                        e.target.onerror = null;
+                        e.target.src = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60";
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">
-                      🧁
+                    <div className="w-full h-full flex items-center justify-center text-4xl bg-indigo-50/50">
+                      {prod.category === "BREAD"
+                        ? "🥖"
+                        : prod.category === "COOKIE"
+                        ? "🍪"
+                        : prod.category === "PASTRY"
+                        ? "🥐"
+                        : prod.category === "CUPCAKE"
+                        ? "🧁"
+                        : "🎂"}
                     </div>
                   )}
                   <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full shadow-xs">
@@ -604,17 +620,174 @@ export default function Products() {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Image URL
+                  Product Image
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full border px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={form.imageUrl}
-                  onChange={(e) =>
-                    setForm({ ...form, imageUrl: e.target.value })
-                  }
-                />
+
+                <div className="flex gap-4 items-start bg-gray-50 p-3 rounded-xl border border-gray-200/80">
+                  <div className="w-20 h-20 rounded-lg bg-gray-200 border overflow-hidden shrink-0 flex items-center justify-center text-gray-400">
+                    {form.imageUrl ? (
+                      <img
+                        src={form.imageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60";
+                        }}
+                      />
+                    ) : (
+                      <span className="text-3xl">🍰</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Paste image URL (https://... or data:image/...)"
+                      className="w-full border px-3 py-1.5 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      value={form.imageUrl}
+                      onChange={(e) =>
+                        setForm({ ...form, imageUrl: e.target.value })
+                      }
+                    />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="cursor-pointer bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1 shadow-2xs">
+                        📁 Upload Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                  const canvas = document.createElement("canvas");
+                                  const maxDim = 500;
+                                  let w = img.width;
+                                  let h = img.height;
+                                  if (w > maxDim || h > maxDim) {
+                                    if (w > h) {
+                                      h = Math.round((h * maxDim) / w);
+                                      w = maxDim;
+                                    } else {
+                                      w = Math.round((w * maxDim) / h);
+                                      h = maxDim;
+                                    }
+                                  }
+                                  canvas.width = w;
+                                  canvas.height = h;
+                                  const ctx = canvas.getContext("2d");
+                                  ctx.drawImage(img, 0, 0, w, h);
+                                  const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+                                  setForm((prev) => ({ ...prev, imageUrl: compressedDataUrl }));
+                                };
+                                img.src = event.target.result;
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {form.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, imageUrl: "" })}
+                          className="text-xs text-rose-600 hover:text-rose-800 font-medium"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Quick presets */}
+                    <div className="text-2xs text-gray-400 flex flex-wrap items-center gap-1">
+                      <span>Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            imageUrl:
+                              "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60",
+                          })
+                        }
+                        className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                      >
+                        🎂 Choc Cake
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            imageUrl:
+                              "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=500&auto=format&fit=crop&q=60",
+                          })
+                        }
+                        className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                      >
+                        🍰 Berry Cake
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            imageUrl:
+                              "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=500&auto=format&fit=crop&q=60",
+                          })
+                        }
+                        className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                      >
+                        🧁 Cupcake
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            imageUrl:
+                              "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=500&auto=format&fit=crop&q=60",
+                          })
+                        }
+                        className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                      >
+                        🥐 Croissant
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            imageUrl:
+                              "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&auto=format&fit=crop&q=60",
+                          })
+                        }
+                        className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                      >
+                        🥖 Baguette
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            imageUrl:
+                              "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=500&auto=format&fit=crop&q=60",
+                          })
+                        }
+                        className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                      >
+                        🍪 Cookie
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
